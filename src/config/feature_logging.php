@@ -3,6 +3,9 @@
 /**
  * Feature Logging configuration file.
  */
+
+use FeatureLogging\FeatureLoggingManager;
+
 return [
 
 

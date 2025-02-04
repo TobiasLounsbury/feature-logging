@@ -31,7 +31,10 @@
         "laravel": {
             "providers": [
                 "FeatureLogging\\Providers\\FeatureLoggingServiceProvider"
-            ]
+            ],
+            "aliases": {
+                "feature-log": "FeatureLogging\\Facades\\FeatureLogging"
+            }
         }
     },
     "config": {

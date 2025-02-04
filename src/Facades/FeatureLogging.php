@@ -2,11 +2,14 @@
 
 namespace FeatureLogging\Facades;
 
+use FeatureLogging\FeatureLoggingManager;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Facade;
 use Psr\Log\LoggerInterface;
 
 /**
  * @method static LoggerInterface feature(string $featureName)
+ * @method static void flushLastMessages(string $channel = null)
  * @method static void forgetFeature(string $featureName)
  * @method static string getDefaultFeatureLevel()
  * @method static array getFeatureLevels()
@@ -26,6 +29,6 @@ class FeatureLogging extends Facade
 {
     protected static function getFacadeAccessor()
     {
-        return 'FeatureLogging';
+        return FeatureLoggingManager::class;
     }
 }

@@ -6,18 +6,37 @@ namespace FeatureLogging;
 use Illuminate\Support\Collection;
 use Psr\Log\LoggerInterface;
 use Stringable;
+
 class FeatureLoggingWrapper implements LoggerInterface
 {
     private Collection $eventKeys;
+    private Collection $lockedKeys;
 
-    public function __construct(protected LoggerInterface $logDriver)
+    public function __construct(protected LoggerInterface $logDriver, protected LoggerInterface $nullLogger)
     {
         $this->eventKeys = collect();
+        $this->loggedKeys = collect();
     }
 
-    public function guessKey():string
+    private function guessKey():string
     {
         return 'empty';
+    }
+
+    private function unlessKeyIsLocked(string $key): LoggerInterface
+    {
+        return ($this->lockedKeys->get($key, false)) ? $this->nullLogger : $this;
+    }
+
+
+    public function disableLogKey(string $key): void
+    {
+        $this->lockedKeys[$key] = true;
+    }
+
+    public function enableLogKey(string $key): void
+    {
+        $this->lockedKeys[$key] = false;
     }
 
     public function once(?String $key = null): LoggerInterface
@@ -32,11 +51,11 @@ class FeatureLoggingWrapper implements LoggerInterface
         $count = $this->eventKeys->get($key, 0);
 
         if ($count >= $allowedTimes) {
-            return $this->getNullLogger();
+            return $this->nullLogger;
         }
 
         $this->eventKeys->put($key, $count + 1);
-        return $this;
+        return $this->unlessKeyIsLocked($key);
     }
 
     public function skip(int $skipTimes, ?String $key = null, ?int $allowedTimes = null): LoggerInterface
@@ -46,10 +65,10 @@ class FeatureLoggingWrapper implements LoggerInterface
 
         if ($count < $skipTimes) {
             $this->eventKeys->put($key, $count + 1);
-            return $this->getNullLogger();
+            return $this->nullLogger;
         }
 
-        return ($allowedTimes) ? $this->n($skipTimes + $allowedTimes, $key) : $this;
+        return ($allowedTimes) ? $this->n($skipTimes + $allowedTimes, $key) : $this->unlessKeyIsLocked($key);
     }
 
     /**

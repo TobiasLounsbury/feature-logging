@@ -34,7 +34,7 @@ trait usesFeatureLoggingLevels
 
 
             $this->defaultFeatureLoggingLevel = strtolower($config['feature_logging.default_level']);
-            if($this->defaultFeatureLoggingLevel === 'system') {
+            if ($this->defaultFeatureLoggingLevel === 'system') {
                 $this->defaultFeatureLoggingLevel = strtolower(Arr::get($config['logging.channels'], "{$config['feature_logging.log_channel']}.level") ??
                     Arr::get($config['logging.channels'], "{$config['logging.default']}.level") ??
                     'disabled');
@@ -53,12 +53,17 @@ trait usesFeatureLoggingLevels
         $fallback = Config::get('feature_logging.fallback_on_config', true);
         $level = Config::get("feature_logging.features.${featureName}");
 
-        return  $this->normalizeLevel($fallback ? $level : null) ?? $this->getDefaultFeatureLevel();
+        return $this->normalizeLevel($fallback ? $level : null) ?? $this->getDefaultFeatureLevel();
     }
 
     public function getFeatureLevels(): array
     {
         return $this->featureLevels;
+    }
+
+    public function getStorageMethod(): string
+    {
+        return $this->getFeatureLoggingConfig('storage_method', 'cache');
     }
 
     public function setDefaultFeatureLevel(string $level): void
@@ -98,22 +103,31 @@ trait usesFeatureLoggingLevels
     {
         return $this->featureLevels = $this->fetchFeatureLevels();
     }
+
+    protected function getFeatureLoggingConfig(string $key = '*', $default = null): mixed
+    {
+        if(!isset($this->featureLoggingConfig)) {
+            $this->featureLoggingConfig = Config::get('feature_logging');
+        }
+
+        return Arr::get($this->featureLoggingConfig, $key, $default);
+    }
+
     protected function getFeatureLoggingStorageDriver(): Storage
     {
         return $this->featureLoggingStorageDriver ??= $this->makeFeatureLoggingStorageDriver();
     }
 
-    protected function makeFeatureLoggingStorageDriver($config = null): Storage
+    protected function makeFeatureLoggingStorageDriver($method = null): Storage
     {
-        $config ??= Config::get('feature_logging');
-        $method = Arr::get($config, 'storage_method', 'cache');
+        $method ??= $this->getFeatureLoggingConfig('storage_method', 'cache');
 
         switch ($method) {
             case 'config':
                 return new ConfigStorageDriver();
 
             case 'custom':
-                $customStorage = $config['custom_storage'];
+                $customStorage = $this->getFeatureLoggingConfig('custom_storage');
 
                 return match(true) {
                     (is_callable($customStorage)) => $customStorage(),
@@ -124,7 +138,7 @@ trait usesFeatureLoggingLevels
 
             case 'cache':
             default:
-                return new CacheStorageDriver($config);
+                return new CacheStorageDriver();
         }
     }
 

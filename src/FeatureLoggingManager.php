@@ -26,6 +26,10 @@ class FeatureLoggingManager extends LogManager
         return $this->driver($this->getFeatureChannelName($featureName));
     }
 
+    public function flushLastMessages(string $channel = null): void
+    {
+
+    }
 
     public function forgetFeature(string $featureName): void
     {
@@ -36,6 +40,11 @@ class FeatureLoggingManager extends LogManager
     {
         unset($this->wrappedChannels[$driver]);
         parent::forgetChannel($driver);
+    }
+
+    public function getStorageMethod(): string
+    {
+        return $this->app['config']["feature_logging.storage_method"] ?? 'cache';
     }
 
 
